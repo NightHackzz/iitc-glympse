@@ -382,12 +382,14 @@ function wrapper(PluginInfo) {
       const groups = await glympseApi(`groups/${encodeURIComponent(glympsetag)}/events?next=${next}`);
       // beware: events or group response type possible!
       if (groups.type === 'events') {
+//       console.log (`type=events`);
         next = groups.next;
         groups.items.forEach((item) => {
           if (item.type === 'invite') {
             // new user sharing
             const existingMember = allMembers.find((m) => m.id === item.member);
             if (existingMember) {
+              console.log (`existingMember=${existingMember},item.invite=${item.invite}`);
               existingMember.invite = item.invite;
               existingMember.expired = false;
               existingMember.next = 0;
@@ -397,6 +399,8 @@ function wrapper(PluginInfo) {
               existingMember.marker.setIcon(ic);
               updatePopup(existingMember);
             } else {
+//todo:
+//              concole.log (`nickname=${item.member}`);
               const newMember = {
                 id: item.member,
                 name: item.member, // user's nickname not known yet, will get sent on user update --> "properties" array (bc. next is 0)
@@ -424,13 +428,17 @@ function wrapper(PluginInfo) {
           // TODO: is there a type 'leave' event or similar? how exactly is it called? - probably the ticket is set to expired?
         });
       } else {
+        console.log (`type=${groups.type}`);
         // type == 'group'
         next = groups.events;
         // TODO: does the response include all members then? i assume so...
         console.debug('present member count: ', allMembers.length, ', received member count: ', groups.members.length);
         groups.members.forEach((m) => {
           const existingMember = allMembers.find((pm) => pm.id === m.id);
-          if (existingMember) { existingMember.invite = m.invite; } else {
+          if (existingMember) {
+             console.log (`existingMember=${existingMember}`);
+            existingMember.invite = m.invite;
+          } else {
             const newMember = {
               id: m.id,
               name: m.id, // user's nickname not known yet, will get sent on user update --> "properties" array (bc. next is 0)
@@ -463,7 +471,9 @@ function wrapper(PluginInfo) {
             response.location.forEach((l) => {
               m.line.addLatLng([l[1] / 1000000, l[2] / 1000000]);
             });
-            m.marker.setLatLng(m.line.getLatLngs()[m.line.getLatLngs().length - 1]);
+            m.lastLatLng = m.line.getLatLngs()[m.line.getLatLngs().length - 1];
+            m.marker.setLatLng(m.lastLatLng);
+            //m.toolTip.setLatLng(m.lastLatLng);
 
             const latestLocationWithAdditionalInfo = findLast(response.location, ((e) => e.length >= 5));
             if (latestLocationWithAdditionalInfo) {
@@ -537,6 +547,9 @@ function wrapper(PluginInfo) {
     }, updateSpeed);
   }
 
+  //
+  // 初期
+  //
   async function fetchInitialData() {
     let groups;
     try {
@@ -554,11 +567,11 @@ function wrapper(PluginInfo) {
     allMembers = groups.members;
     next = groups.events + 1;
     const tooManyPromises = [];
-    const latLngs = [];
+    //const latLngs = [];
     allMembers.forEach((m) => {
       let thisMemberHasError = false;
       tooManyPromises.push(glympseApi(`invites/${m.invite}?uncompressed=true`).catch((e) => {
-        // sometimes the invite code is set in group members list but upon trying to retrieve it the API complains that it's no longer available.
+        // 招待コードがグループ メンバー リストに設定されている場合がありますが、それを取得しようとすると、API はもう利用できないというメッセージを出します。
         // if that happens, just skip that member.
         thisMemberHasError = true;
         if (e.message && !e.message.includes('Unable to retrieve invite_code')) {
@@ -568,9 +581,12 @@ function wrapper(PluginInfo) {
         }
         allMembers.splice(allMembers.indexOf(m), 1);
       }).then((response) => {
-        if (thisMemberHasError) return;
+        if (thisMemberHasError) {
+            return;
+        }
+        const latLngs = [];
         response.location.forEach((l) => {
-          latLngs.push([l[1] / 1000000, l[2] / 1000000]);
+            latLngs.push([l[1] / 1000000, l[2] / 1000000]);
         });
         const latestLocationWithAdditionalInfo = findLast(response.location, ((e) => e.length >= 5));
         if (latestLocationWithAdditionalInfo) {
@@ -586,11 +602,12 @@ function wrapper(PluginInfo) {
         m.last = new Date(response.last);
         m.expired = response.properties.find((p) => p.n === 'expired')?.v;
         m.avatar = response.properties.find((p) => p.n === 'avatar')?.v;
-        m.travelType = response.properties.find((p) => p.n === 'travel_mode')?.v.type;
+        m.travelType = response.properties.find((p) => p.n === 'travel_mode')?.v?.type;
         m.line = L.polyline(latLngs, { color: 'red', interactive: false }).addTo(glympseLayers);
         let className = 'glympse-arrowhead';
         if (m.expired) { className += ' expired'; }
-        m.marker = L.marker(latLngs[latLngs.length - 1], {
+        m.lastLatLng = latLngs[latLngs.length - 1];
+        m.marker = L.marker(m.lastLatLng , {
           title: m.name,
           draggable: false,
           icon: L.divIcon({
@@ -600,7 +617,9 @@ function wrapper(PluginInfo) {
           }),
           rotationOrigin: 'center center',
         }).bindPopup().addTo(glympseLayers);
+//        debugger;
 
+//        m.toolTip = L.tooltip(m.lastLatLng,{content:`${m.name}`}).addTo(glympseLayers);
         if (m.heading) {
           m.marker.setRotationAngle(m.heading);
         }
