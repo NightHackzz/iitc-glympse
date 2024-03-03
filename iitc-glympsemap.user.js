@@ -164,23 +164,6 @@ function wrapper(PluginInfo) {
    */
 
   /**
-     * Utility function to find the last element in an {@link array} matching the specified {@link predicate}.
-     * This is achieved by reversing the array and then calling {@link Array.find()|find()} on it.
-     * There is a {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findLast findLast()} function, but support in browsers is limited.
-     * if present, this one is used instead.
-     * @template T - Type of the array elements
-     * @param {T[]} array - the array to search
-     * @param {Predicate<T>} predicate - the condition the element has to match.
-     * @returns {T | undefined} - the last matching array element or {@link undefined} if none was found.
-     */
-  function findLast(array, predicate) {
-      if (array !== undefined) {
-          return array.findLast(predicate);
-      }
-      return new array();
-  }
-
-  /**
      * Utility function to contact Glympse API and auto-add access token.
      * @param {string} endpointAndQuery API endpoint and querystring, no leading slash.
      * @param {RequestInit} config fetch request configuration
@@ -379,7 +362,9 @@ function wrapper(PluginInfo) {
     `;
     m.marker.setPopupContent(htmlstring);
   }
-
+  //
+  // Update Loop
+  //
   function startUpdateLoop() {
     updateLoop = setInterval(async () => {
       const groups = await glympseApi(`groups/${encodeURIComponent(glympsetag)}/events?next=${next}`);
@@ -388,10 +373,11 @@ function wrapper(PluginInfo) {
         next = groups.next;
         groups.items.forEach((item) => {
           if (item.type === 'invite') {
+//            debugger;
             // new user sharing
             const existingMember = allMembers.find((m) => m.id === item.member);
             if (existingMember) {
-              console.log (`existingMember=${existingMember},item.invite=${item.invite}`);
+              console.log (`existingMember=${existingMember.name},item.invite=${item.invite}`);
               existingMember.invite = item.invite;
               existingMember.expired = false;
               existingMember.next = 0;
@@ -416,7 +402,7 @@ function wrapper(PluginInfo) {
                   }),
                   rotationOrigin: 'center center',
                 }).bindPopup().addTo(glympseLayers),
-                line: L.polyline([], { color: 'red', interactive: false }).addTo(glympseLayers),
+                line: L.polyline([], { color: 'olive', interactive: false }).addTo(glympseLayers),
               };
               allMembers.push(newMember);
               updatePopup(newMember);
@@ -453,7 +439,7 @@ function wrapper(PluginInfo) {
                 }),
                 rotationOrigin: 'center center',
               }).bindPopup().addTo(glympseLayers),
-              line: L.polyline([], { color: 'red', interactive: false }).addTo(glympseLayers),
+              line: L.polyline([], { color: 'olive', interactive: false }).addTo(glympseLayers),
             };
             allMembers.push(newMember);
             updatePopup(newMember);
@@ -463,22 +449,24 @@ function wrapper(PluginInfo) {
 
       const tooManyPromises = [];
       allMembers.forEach((m) => {
-        if (m.expired) { return; }
+        if (m.expired) {
+            return;
+        }
         tooManyPromises.push(glympseApi(`invites/${m.invite}?next=${m.next}&uncompressed=true`).then((response) => {
           // update all member's locations
           if (response.location) {
+            if (m.name.startsWith('りりか')) {
+//               debugger;
+            }
             response.location.forEach((l) => {
               m.line.addLatLng([l[1] / 1000000, l[2] / 1000000]);
             });
             if (m.line.getLatLngs().length > 0) {
-                m.lastLatLng = [0,0];
-                m.marker.setOpacity(0.0);
-            }
-            else {
               //? exist LatLengs
               m.lastLatLng = m.line.getLatLngs()[m.line.getLatLngs().length - 1];
               m.marker.setLatLng(m.lastLatLng);
-              m.marker.setOpacity(1.0);
+            }
+            else {
             }
 
             const latestLocationWithAdditionalInfo = response.location?.findLast((e) => e.length >= 5);
@@ -557,6 +545,7 @@ function wrapper(PluginInfo) {
   // fetchInitialData
   //
   async function fetchInitialData() {
+    console.log ("fetchInitialData called.");
     let groups;
     try {
       groups = await glympseApi(`groups/${encodeURIComponent(glympsetag)}`);
@@ -576,7 +565,8 @@ function wrapper(PluginInfo) {
     //const latLngs = [];
     allMembers.forEach((m) => {
       let thisMemberHasError = false;
-      tooManyPromises.push(glympseApi(`invites/${m.invite}?uncompressed=true`).catch((e) => {
+      tooManyPromises.push(glympseApi(`invites/${m.invite}?uncompressed=true`)
+      .catch((e) => {
         thisMemberHasError = true;
         if (e.message && !e.message.includes('Unable to retrieve invite_code')) {
           alert(e.message);
@@ -589,9 +579,11 @@ function wrapper(PluginInfo) {
             return;
         }
         const latLngs = [];
+        m.locations = new Array();
         if (response.location !== undefined){
           response.location.forEach((l) => {
               latLngs.push([l[1] / 1000000, l[2] / 1000000]);
+              m.locations.push(l);
           });
         }
         const latestLocationWithAdditionalInfo = response.location?.findLast((e) => e.length >= 5);
@@ -604,21 +596,26 @@ function wrapper(PluginInfo) {
         }
 
         m.name = response.properties.find((p) => p.n === 'name').v;
+//        if (m.name.startsWith("いも")) {
+//            debugger;
+//        }
         m.next = response.next;
         m.last = new Date(response.last);
         m.expired = response.properties.find((p) => p.n === 'expired')?.v;
         m.avatar = response.properties.find((p) => p.n === 'avatar')?.v;
         m.travelType = response.properties.find((p) => p.n === 'travel_mode')?.v?.type;
-        m.line = L.polyline(latLngs, { color: 'red', interactive: false }).addTo(glympseLayers);
+        m.line = L.polyline(latLngs, { color: 'olive', interactive: false }).addTo(glympseLayers);
         let className = 'glympse-arrowhead';
-        if (m.expired) { className += ' expired'; }
+        if (m.expired) {
+            className += ' expired';
+        }
         m.lastLatLng = (latLngs.length > 0) ? latLngs[latLngs.length - 1] : [0,0];
         m.marker = L.marker(m.lastLatLng , {
           opacity : (latLngs.length > 0) ? 1.0 : 0.0,
           title: m.name,
           draggable: false,
           icon: L.divIcon({
-            className,
+            className: className,
             iconSize: [29, 30],
             iconAnchor: [15, 15],
           }),
@@ -649,7 +646,9 @@ function wrapper(PluginInfo) {
           * when trying i got a value of 632720000.
           * even if this would be milliseconds, it would last a bit more than a week...
         */
-      if (glympsetag) { fetchInitialData(); }
+      if (glympsetag) {
+          fetchInitialData();
+      }
     } catch (/** @type {Error} */ e) {
       alert(/* html */`login unsuccessful:<br><code>${e.message}</code>`, true);
     }
@@ -787,7 +786,7 @@ function wrapper(PluginInfo) {
       }
 
       // log in to glympse api
-      logIntoApi();
+     // logIntoApi();
     }
   };
   // #endregion
