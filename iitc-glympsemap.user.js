@@ -1,9 +1,8 @@
 // ==UserScript==
 // @name         IITC plugin: Glympse
 // @category     Layer
-// @author       MaxEtMoritz
 // @author       NightHackz
-// @version      0.1.1
+// @version      0.2.1
 // @namespace    https://github.com/NightHackzz/iitc-glympse
 // @downloadURL  https://github.com/NightHackzz/iitc-glympse/raw/master/iitc-glympsemap.user.js
 // @updateURL    https://github.com/NightHackzz/iitc-glympse/raw/master/iitc-glympsemap.user.js
@@ -43,81 +42,23 @@ function wrapper(PluginInfo) {
   let glympseLayers;
   let next = 0;
   let updateLoop = null;
-  const style = /* css */`
-    .glympse-arrowhead{
-      background:
-      url('data:image/png;base64,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')
-        left
-        no-repeat;
-      background-size: cover;
+    const markerStyle = `
+    .agent-avatar {
+        background: linear-gradient(to bottom right, lime, blue);
+        border-radius: 50%;
+        height: 100%;
+        padding: 5px;
+        width: 100%;
+        & img {
+            background: #fff; /* 透過してる画像の対応 */
+            border-radius: 50%;
+            height: 40px !important;
+            width:  40px !important;
+        }
+
     }
-    .glympse-arrowhead.expired{
-      background-position: right;
+    .agent-avatar.expired {
+      opacity: 0.5;
     }
     `;
 
@@ -130,11 +71,12 @@ function wrapper(PluginInfo) {
    * @enum {string}
   */
   const travelMode = Object.freeze({
-    drive: 'car',
-    cycle: 'bike',
-    walk: 'foot',
-    transit: 'public transport',
-    airline: 'plane',
+    drive:   '車',
+    cycle:   'バイク',
+    walk:    '徒歩',
+    transit: '公共交通機関',
+    airline: '飛行機',
+    undefined: '？'
   });
 
   /**
@@ -193,37 +135,31 @@ function wrapper(PluginInfo) {
     });
   }
 
-  // #region https://muffinman.io/blog/javascript-time-ago-function/
-  const MONTH_NAMES = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
-
+  // #region
   function getFormattedDate(date, prefomattedDate = false, hideYear = false) {
     const day = date.getDate();
-    const month = MONTH_NAMES[date.getMonth()];
+    const month = date.getMonth();
     const year = date.getFullYear();
     const hours = date.getHours();
     let minutes = date.getMinutes();
 
     if (minutes < 10) {
-      // Adding leading zero to minutes
       minutes = `0${minutes}`;
     }
 
     if (prefomattedDate) {
-      // Today at 10:20
-      // Yesterday at 10:20
-      return `${prefomattedDate} at ${hours}:${minutes}`;
+      // 今日の 10:20
+      // 昨日の 10:20
+      return `${prefomattedDate}の ${hours}:${minutes}`;
     }
 
     if (hideYear) {
-      // 10. January at 10:20
-      return `${day}. ${month} at ${hours}:${minutes}`;
+      // 1月10日 10:20
+      return `${month}月${day}日 ${hours}:${minutes}`;
     }
 
-    // 10. January 2017. at 10:20
-    return `${day}. ${month} ${year}. at ${hours}:${minutes}`;
+    // 2024年1月10日 10:20
+    return `${year}年 ${month}月 ${day}日 ${hours}:${minutes}`;
   }
 
   // --- Main function
@@ -243,87 +179,23 @@ function wrapper(PluginInfo) {
     const isThisYear = today.getFullYear() === date.getFullYear();
 
     if (seconds < 5) {
-      return 'now';
+      return '今';
     } if (seconds < 60) {
-      return `${seconds} seconds ago`;
+      return `${seconds} 秒前`;
     } if (seconds < 90) {
-      return 'about a minute ago';
+      return '数分前';
     } if (minutes < 60) {
-      return `${minutes} minutes ago`;
+      return `${minutes} 分前`;
     } if (isToday) {
-      return getFormattedDate(date, 'Today'); // Today at 10:20
+      return getFormattedDate(date, '今日'); // Today at 10:20
     } if (isYesterday) {
-      return getFormattedDate(date, 'Yesterday'); // Yesterday at 10:20
+      return getFormattedDate(date, '昨日'); // Yesterday at 10:20
     } if (isThisYear) {
       return getFormattedDate(date, false, true); // 10. January at 10:20
     }
 
     return getFormattedDate(date); // 10. January 2017. at 10:20
   }
-  // #endregion
-
-  // #region https://github.com/bbecquet/Leaflet.RotatedMarker
-
-  /* eslint-disable no-underscore-dangle, camelcase, func-names */
-  function setupRotatedMarker() {
-    // save these original methods before they are overwritten
-    const proto_initIcon = L.Marker.prototype._initIcon;
-    const proto_setPos = L.Marker.prototype._setPos;
-
-    const oldIE = (L.DomUtil.TRANSFORM === 'msTransform');
-
-    L.Marker.addInitHook(function () {
-      const iconOptions = this.options.icon && this.options.icon.options;
-      let iconAnchor = iconOptions && this.options.icon.options.iconAnchor;
-      if (iconAnchor) {
-        iconAnchor = (`${iconAnchor[0]}px ${iconAnchor[1]}px`);
-      }
-      this.options.rotationOrigin = this.options.rotationOrigin || iconAnchor || 'center bottom';
-      this.options.rotationAngle = this.options.rotationAngle || 0;
-
-      // Ensure marker keeps rotated during dragging
-      this.on('drag', (e) => { e.target._applyRotation(); });
-    });
-
-    L.Marker.include({
-      _initIcon() {
-        proto_initIcon.call(this);
-      },
-
-      _setPos(pos) {
-        proto_setPos.call(this, pos);
-        this._applyRotation();
-      },
-
-      _applyRotation() {
-        if (this.options.rotationAngle) {
-          this._icon.style[`${L.DomUtil.TRANSFORM}Origin`] = this.options.rotationOrigin;
-
-          if (oldIE) {
-            // for IE 9, use the 2D rotation
-            this._icon.style[L.DomUtil.TRANSFORM] = `rotate(${this.options.rotationAngle}deg)`;
-          } else {
-            // for modern browsers, prefer the 3D accelerated version
-            this._icon.style[L.DomUtil.TRANSFORM] += ` rotateZ(${this.options.rotationAngle}deg)`;
-          }
-        }
-      },
-
-      setRotationAngle(angle) {
-        this.options.rotationAngle = angle;
-        this.update();
-        return this;
-      },
-
-      setRotationOrigin(origin) {
-        this.options.rotationOrigin = origin;
-        this.update();
-        return this;
-      },
-    });
-  }
-  /* eslint-enable no-underscore-dangle, camelcase, func-names */
-
   // #endregion
 
   /**
@@ -340,22 +212,22 @@ function wrapper(PluginInfo) {
         <img src="${m.avatar}" width="90" height="90" style="margin-left:45px;">
       `;
     }
-    if (m.expired) { htmlstring += '<br>Sharing Expired.'; }
+    if (m.expired) { htmlstring += '<br>期限切れ'; }
 
     htmlstring += /* html */`
       <dl>
-      <dt>travelling:</dt>
-      <dd>By ${travelMode[m.travelType]}</dd>
+      <dt>移動方法:</dt>
+      <dd>${travelMode[m.travelType]}</dd>
     `;
 
     if (typeof (m.speed) === 'number') {
       htmlstring += /* html */`
-        <dt>speed:</dt>
+        <dt>速度:</dt>
         <dd>${m.speed.toFixed(1)} km/h</dd>
       `;
     }
     htmlstring += /* html */`
-      <dt>last update:</dt>
+      <dt>最終更新:</dt>
       <dd>${timeAgo(m.last)}</dd>
       </dl>
       </div>
@@ -378,12 +250,13 @@ function wrapper(PluginInfo) {
             const existingMember = allMembers.find((m) => m.id === item.member);
             if (existingMember) {
               console.log (`existingMember=${existingMember.name},item.invite=${item.invite}`);
+                debugger;
               existingMember.invite = item.invite;
               existingMember.expired = false;
               existingMember.next = 0;
-              existingMember.line.setLatLngs([]);
+              //existingMember.line.setLatLngs([]);
               const ic = existingMember.marker.getIcon();
-              ic.options.className = 'glympse-arrowhead';
+              ic.options.className = 'agent-avatar';
               existingMember.marker.setIcon(ic);
               updatePopup(existingMember);
             } else {
@@ -396,9 +269,9 @@ function wrapper(PluginInfo) {
                   title: item.member,
                   draggable: false,
                   icon: L.divIcon({
-                    className: 'glympse-arrowhead',
-                    iconSize: [29, 30],
-                    iconAnchor: [15, 15],
+                    html : "?",
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
                   }),
                   rotationOrigin: 'center center',
                 }).bindPopup().addTo(glympseLayers),
@@ -433,9 +306,9 @@ function wrapper(PluginInfo) {
                 title: m.name,
                 draggable: false,
                 icon: L.divIcon({
-                  className: 'glympse-arrowhead',
-                  iconSize: [29, 30],
-                  iconAnchor: [15, 15],
+                    html : "?",
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20],
                 }),
                 rotationOrigin: 'center center',
               }).bindPopup().addTo(glympseLayers),
@@ -455,19 +328,9 @@ function wrapper(PluginInfo) {
         tooManyPromises.push(glympseApi(`invites/${m.invite}?next=${m.next}&uncompressed=true`).then((response) => {
           // update all member's locations
           if (response.location) {
-            if (m.name.startsWith('りりか')) {
-//               debugger;
-            }
-            response.location.forEach((l) => {
-              m.line.addLatLng([l[1] / 1000000, l[2] / 1000000]);
-            });
-            if (m.line.getLatLngs().length > 0) {
-              //? exist LatLengs
-              m.lastLatLng = m.line.getLatLngs()[m.line.getLatLngs().length - 1];
-              m.marker.setLatLng(m.lastLatLng);
-            }
-            else {
-            }
+            const lastLocation = response.location[response.location.length-1];
+            m.lastLatLng = [lastLocation[1] / 1000000, lastLocation[2] / 1000000];
+            m.marker.setLatLng(m.lastLatLng);
 
             const latestLocationWithAdditionalInfo = response.location?.findLast((e) => e.length >= 5);
             if (latestLocationWithAdditionalInfo) {
@@ -476,7 +339,6 @@ function wrapper(PluginInfo) {
                 m.speed = latestLocationWithAdditionalInfo[3] * 0.036;
               }
               m.heading = latestLocationWithAdditionalInfo[4];
-              m.marker.setRotationAngle(m.heading);
             }
           }
 
@@ -507,9 +369,9 @@ function wrapper(PluginInfo) {
             m.expired = expired;
             const ic = m.marker.getIcon();
             if (m.expired) {
-              ic.options.className = 'glympse-arrowhead expired';
+              ic.options.className = 'agent-avatar expired';
             } else {
-              ic.options.className = 'glympse-arrowhead';
+              ic.options.className = 'agent-avatar';
             }
             m.marker.setIcon(ic);
           }
@@ -551,9 +413,9 @@ function wrapper(PluginInfo) {
       groups = await glympseApi(`groups/${encodeURIComponent(glympsetag)}`);
     } catch (e) {
       if (e.message) {
-        alert(/* html */`Error while loading Glympse tag:<br>
+        alert(/* html */`Glympseタグの読み込み失敗:<br>
         <code>${e.message}</code><br>
-        please make sure you entered an existing Glympse tag.`, true);
+        有効なGlympseタグを指定してください`, true);
       } else {
         alert(e);
       }
@@ -579,11 +441,9 @@ function wrapper(PluginInfo) {
             return;
         }
         const latLngs = [];
-        m.locations = new Array();
         if (response.location !== undefined){
           response.location.forEach((l) => {
               latLngs.push([l[1] / 1000000, l[2] / 1000000]);
-              m.locations.push(l);
           });
         }
         const latestLocationWithAdditionalInfo = response.location?.findLast((e) => e.length >= 5);
@@ -596,16 +456,13 @@ function wrapper(PluginInfo) {
         }
 
         m.name = response.properties.find((p) => p.n === 'name').v;
-//        if (m.name.startsWith("いも")) {
-//            debugger;
-//        }
         m.next = response.next;
         m.last = new Date(response.last);
         m.expired = response.properties.find((p) => p.n === 'expired')?.v;
         m.avatar = response.properties.find((p) => p.n === 'avatar')?.v;
         m.travelType = response.properties.find((p) => p.n === 'travel_mode')?.v?.type;
-        m.line = L.polyline(latLngs, { color: 'olive', interactive: false }).addTo(glympseLayers);
-        let className = 'glympse-arrowhead';
+//        m.line = L.polyline(latLngs, { color: 'olive', interactive: false }).addTo(glympseLayers);
+        let className = 'agent-avater';
         if (m.expired) {
             className += ' expired';
         }
@@ -615,16 +472,13 @@ function wrapper(PluginInfo) {
           title: m.name,
           draggable: false,
           icon: L.divIcon({
-            className: className,
-            iconSize: [29, 30],
-            iconAnchor: [15, 15],
+            html : `<div><img src="${m.avatar}"></img></div>`,
+            className : className,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
           }),
           rotationOrigin: 'center center',
         }).bindPopup().addTo(glympseLayers);
-
-        if (m.heading) {
-          m.marker.setRotationAngle(m.heading);
-        }
         updatePopup(m);
       }));
     });
@@ -657,19 +511,19 @@ function wrapper(PluginInfo) {
   function openSettings() {
     const dial = window.dialog({
       html: /* html */`
-        <h3>API settings</h3>
+        <h3>API 設定</h3>
         <div>
-          <label for="glympseID">username:</label>
+          <label for="glympseID">ユーザ名:</label>
           <input type="text" id="glympseID" value="${user ?? ''}" required>
         </div>
         <div>
-          <label for="glympsePassword">password:</label>
+          <label for="glympsePassword">パスワード:</label>
           <input type="text" id="glympsePassword" value="${password ?? ''}" required>
         </div>
         <div>
           <label for="glympseApiToken">API token:</label>
           <input type="text" id="glympseApiToken" value="${apiKey ?? ''}" required>
-          <p>Possibilities to get the API token:</p>
+          <p>APIトークンを取得するには...</p>
           <ul>
             <li>Get yourself a trial token at <a href="https://developer.glympse.com/account/apps" target="_blank">Glympse Developers</a></li>
             <li>Open a Glympse tag in browser with dev tools open.
@@ -731,7 +585,6 @@ function wrapper(PluginInfo) {
   // #region Setup
   const setup = function setup() {
     // init script
-    setupRotatedMarker();
     glympseLayers = new L.LayerGroup(null, { attribution: 'Realtime locations by <a href="https://glympse.com">Glympse</a>' });
     const toolboxLink = document.getElementById('toolbox').appendChild(document.createElement('a'));
     toolboxLink.addEventListener('click', openSettings);
@@ -739,7 +592,7 @@ function wrapper(PluginInfo) {
     toolboxLink.type = 'button';
 
     const styleElem = document.head.appendChild(document.createElement('style'));
-    styleElem.innerText = style;
+    styleElem.innerText = markerStyle;
     // glympseLayers.addTo(map)
 
     // read settings from local storage
